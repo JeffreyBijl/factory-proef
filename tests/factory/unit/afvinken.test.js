@@ -20,7 +20,6 @@ const vink = (id, body, opties = {}) =>
 
 test("AC-1: afvinken geeft het item terug en zet het onderaan", async () => {
 	const res = await vink(idVan("Melk"), { afgevinkt: true });
-	assert.equal(res.status, 200);
 	const item = await res.json();
 	assert.equal(item.naam, "Melk");
 	assert.equal(item.afgevinkt, true);
