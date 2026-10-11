@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="nl">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Boodschappenlijst</title>
+		<style>
+			body {
+				font-family: system-ui, sans-serif;
+				max-width: 32rem;
+				margin: 2rem auto;
+				padding: 0 1rem;
+			}
+			ul {
+				list-style: none;
+				padding: 0;
+			}
+			li {
+				display: flex;
+				align-items: center;
+				gap: 0.75rem;
+				padding: 0.5rem 0;
+				border-bottom: 1px solid #ddd;
+			}
+			li .naam {
+				flex: 1;
+			}
+			button {
+				min-width: 44px;
+				min-height: 44px;
+			}
+			form {
+				display: flex;
+				gap: 0.5rem;
+			}
+			input {
+				flex: 1;
+				min-height: 44px;
+				font-size: 1rem;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>Boodschappenlijst</h1>
+		<form id="toevoegen">
+			<label for="naam" class="visueel-verborgen">Nieuw item</label>
+			<input
+				id="naam"
+				name="naam"
+				placeholder="Nieuw item"
+				maxlength="100"
+				required
+			/>
+			<button type="submit">Toevoegen</button>
+		</form>
+		<p id="melding" role="status"></p>
+		<ul id="lijst"></ul>
+		<script>
+			// Zonder inlogscherm: het huishouden staat vast voor deze demo.
+			if (!document.cookie.includes("huishouden="))
+				document.cookie = "huishouden=jansen; path=/";
+
+			const lijst = document.getElementById("lijst");
+			const melding = document.getElementById("melding");
+
+			async function laad() {
+				const items = await (await fetch("/api/items")).json();
+				lijst.replaceChildren(...items.map(rij));
+			}
+
+			function rij(item) {
+				const li = document.createElement("li");
+				li.dataset.id = item.id;
+				const naam = document.createElement("span");
+				naam.className = "naam";
+				naam.textContent = item.naam;
+				const weg = document.createElement("button");
+				weg.textContent = "Verwijder";
+				weg.setAttribute("aria-label", `Verwijder ${item.naam}`);
+				weg.onclick = async () => {
+					const res = await fetch(`/api/items/${item.id}`, {
+						method: "DELETE",
+					});
+					melding.textContent = res.ok
+						? `${item.naam} verwijderd`
+						: "Verwijderen lukte niet, probeer het opnieuw";
+					laad();
+				};
+				li.append(naam, weg);
+				return li;
+			}
+
+			document.getElementById("toevoegen").onsubmit = async (e) => {
+				e.preventDefault();
+				const invoer = document.getElementById("naam");
+				const res = await fetch("/api/items", {
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({ naam: invoer.value }),
+				});
+				if (res.ok) invoer.value = "";
+				melding.textContent = res.ok ? "" : (await res.json()).fout;
+				laad();
+			};
+
+			laad();
+		</script>
+	</body>
+</html>

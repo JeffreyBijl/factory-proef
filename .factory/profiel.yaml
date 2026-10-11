@@ -1,0 +1,76 @@
+# Profiel van het voorbeeldproject waarmee de agents van de factory worden getest.
+
+schema: 1
+versie: 1
+goedgekeurd:
+  door: "Jeffrey"
+  op: "2026-10-11"
+project:
+  naam: "Boodschappenlijst (testproject)"
+  repo: "JeffreyBijl/factory-proef"
+  omschrijving: "Gedeelde boodschappenlijst per huishouden; klein testproject voor de agents van de factory"
+
+commandos:
+  installeren: "npm install"
+  bouwen: "npm run build"
+  testen: "npm test"
+  e2e: "npm run e2e"
+  linten: "npm run lint"
+  formatteren: "npm run format"
+  formattering_controleren: "npm run format:check"
+  lokaal_draaien: "npm run dev"
+  gecontroleerd_op: "2026-10-11"
+
+stack:
+  taal: "JavaScript (ES modules) op Node 22 of nieuwer"
+  framework: "geen; node:http en een statische HTML-pagina"
+  database: "geen; opslag in het geheugen (src/store.js)"
+  testtools:
+    unit: "node:test, via HTTP tegen een server op een vrije poort (tests/helpers.js)"
+    e2e: "Playwright; tests in tests/factory/e2e/*.spec.js, server op poort 3100"
+  formatter: "Prettier met tabs (.prettierrc.json); .factory/ is uitgesloten"
+
+testmap: "tests/factory/"
+
+verboden_terrein:
+  - .github/
+  - .devcontainer/
+  - .factory/profiel.yaml
+  - CLAUDE.md
+  - playwright.config.js
+
+gevoelige_gebieden:
+  - pad: "src/server.js"
+    reden: "API en sessie (huishouden uit cookie)"
+
+grenzen:
+  max_rondes: 3
+  max_rondes_zonder_voortgang: 2
+  max_testconflicten: 3
+  pr_alarm:
+    regels: 400
+    bestanden: 15
+  verbruik_alarm: "25% van het weeklimiet per slice"
+
+specialisten:
+  verplicht: [security, ui]
+  optioneel: [ux, backend, database, evaluator]
+
+conventies:
+  - "Namen van functies en variabelen in het Nederlands"
+  - "Unit-tests in tests/factory/unit/<onderwerp>.test.js, met startServer() uit tests/helpers.js"
+  - "Foutantwoorden van de API als { fout: '<Nederlandse tekst>' }"
+
+model_per_rol:
+  spec-schrijver: { model: opus, effort: high }
+  security: { model: opus, effort: high }
+  testagent: { model: sonnet, effort: medium }
+  bouwer: { model: sonnet, effort: medium }
+  eenvoudige-checks: { model: haiku, effort: low }
+
+omgevingen: {}
+
+wijzigingen:
+  - versie: 1
+    op: "2026-10-11"
+    wat: "Profiel voor het testproject"
