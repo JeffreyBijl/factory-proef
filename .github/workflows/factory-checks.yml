@@ -5,7 +5,7 @@
 # Alleen de stap "Stack" hangt van de stack af; standaard Node.
 #
 # De jobnamen zijn de required checks in de rulesets: build, tests, lint, formattering,
-# test-ratchet, secret-scan en dependency-review. Wijzig je een naam, pas dan ook de ruleset aan.
+# e2e, test-ratchet, secret-scan en dependency-review. Wijzig je een naam, pas dan ook de ruleset aan.
 # Geen secrets in deze workflow: een PR van de factory draait hier alleen met leesrechten.
 
 name: factory-checks
@@ -67,6 +67,84 @@ jobs:
           fi
           echo "$commando"
           bash -c "$commando"
+
+  # E2E-tests tegen de preview van deze commit (workflow factory-preview). Zonder Dockerfile, of
+  # zonder preview-workflow, draaien ze lokaal op de runner; zonder E2E-commando slaagt de job.
+  e2e:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      deployments: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: E2E-commando
+        id: commando
+        run: |
+          commando=$(node .github/factory/profiel-commando.mjs e2e)
+          echo "commando=$commando" >> "$GITHUB_OUTPUT"
+          [ -n "$commando" ] || echo "::notice::Geen E2E-commando in het profiel: niets te testen."
+
+      - name: Wachten op de preview
+        if: steps.commando.outputs.commando != ''
+        id: preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          VAN_FORK: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
+        run: |
+          if [ ! -f Dockerfile ] || [ ! -f .github/workflows/factory-preview.yml ] || [ "$VAN_FORK" = "true" ]; then
+            echo "::notice::Geen preview voor deze PR: E2E-tests draaien lokaal."
+            exit 0
+          fi
+          for _ in $(seq 1 150); do
+            id=$(gh api "repos/$REPO/deployments?environment=preview&sha=$SHA" --jq '.[0].id // empty')
+            if [ -n "$id" ]; then
+              url=$(gh api "repos/$REPO/deployments/$id/statuses" --jq '[.[] | select(.state == "success")][0].environment_url // empty')
+              if [ -n "$url" ]; then
+                echo "url=$url" >> "$GITHUB_OUTPUT"
+                echo "Preview: $url"
+                # Een slapende preview wordt wakker van het eerste verzoek; dat duurt ongeveer een minuut.
+                for _ in $(seq 1 30); do
+                  curl -sf -o /dev/null --max-time 20 "$url" && exit 0
+                  sleep 5
+                done
+                echo "::error::De preview antwoordt niet: $url"
+                exit 1
+              fi
+            fi
+            sleep 10
+          done
+          echo "::error::Geen preview voor ${SHA:0:7} binnen 25 minuten; zie de workflow factory-preview."
+          exit 1
+
+      # --- Stack: pas aan bij een andere stack ---
+      - name: Stack
+        if: steps.commando.outputs.commando != ''
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - name: Installeren
+        if: steps.commando.outputs.commando != ''
+        run: |
+          commando=$(node .github/factory/profiel-commando.mjs installeren)
+          if [ -n "$commando" ]; then bash -c "$commando"; fi
+          npx playwright install --with-deps chromium
+      # --- Einde stack ---
+
+      - name: E2E-tests
+        if: steps.commando.outputs.commando != ''
+        env:
+          BASE_URL: ${{ steps.preview.outputs.url }}
+          COMMANDO: ${{ steps.commando.outputs.commando }}
+        run: |
+          if [ -n "$BASE_URL" ]; then echo "Tegen de preview: $BASE_URL"; else unset BASE_URL; fi
+          bash -c "$COMMANDO"
 
   test-ratchet:
     if: github.event_name == 'pull_request'
