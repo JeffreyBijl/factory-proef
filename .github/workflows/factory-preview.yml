@@ -76,15 +76,19 @@ jobs:
                 envSpecificDetails: { dockerfilePath: "./Dockerfile", dockerContext: "." }
               }
             }')
-            antwoord=$(render -X POST "$RENDER_API/services" -d "$body")
-            dienst=$(jq -r '.service.id' <<<"$antwoord")
+            # Aanmaken start meteen een deploy van de laatste commit op de branch.
+            dienst=$(render -X POST "$RENDER_API/services" -d "$body" | jq -r '.service.id')
             echo "Service $NAAM aangemaakt ($dienst)."
+          else
+            # 201 met de deploy, of 202 zonder inhoud als er al een deploy loopt; daarom hieronder opzoeken.
+            render -X POST "$RENDER_API/services/$dienst/deploys" -d "$(jq -n --arg sha "$SHA" '{commitId: $sha}')" -o /dev/null
           fi
-          deploy=$(render -X POST "$RENDER_API/services/$dienst/deploys" -d "$(jq -n --arg sha "$SHA" '{commitId: $sha}')" | jq -r '.id')
-          echo "Deploy $deploy van ${SHA:0:7}."
+          echo "Deploy van ${SHA:0:7} op $dienst."
 
+          status=""
           for _ in $(seq 1 120); do
-            status=$(render "$RENDER_API/services/$dienst/deploys/$deploy" | jq -r '.status')
+            status=$(render "$RENDER_API/services/$dienst/deploys?limit=20" |
+              jq -r --arg sha "$SHA" '[.[].deploy | select(.commit.id == $sha)][0].status // "wacht"')
             case "$status" in
               live) break ;;
               build_failed|update_failed|canceled|pre_deploy_failed|deactivated)
