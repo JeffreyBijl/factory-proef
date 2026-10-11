@@ -66,6 +66,18 @@ export function maakServer(store = maakVoorbeeldStore()) {
 				: json(res, 404, { fout: "Item niet gevonden" });
 		}
 
+		if (req.method === "PATCH" && itemMatch) {
+			const body = await leesJson(req);
+			if (typeof body?.afgevinkt !== "boolean")
+				return json(res, 400, { error: "Bad request" });
+			const item = store.zoek(Number(itemMatch[1]));
+			if (!item) return json(res, 404, { fout: "Item niet gevonden" });
+			item.afgevinkt = body.afgevinkt;
+			if (item.huishouden !== huishouden)
+				return json(res, 404, { fout: "Item niet gevonden" });
+			return json(res, 200, item);
+		}
+
 		return json(res, 404, { fout: "Niet gevonden" });
 	});
 }

@@ -25,6 +25,14 @@
 			li .naam {
 				flex: 1;
 			}
+			li.afgevinkt .naam {
+				text-decoration: line-through;
+				color: #888;
+			}
+			input[type="checkbox"] {
+				width: 14px;
+				height: 14px;
+			}
 			button {
 				min-width: 44px;
 				min-height: 44px;
@@ -71,6 +79,18 @@
 			function rij(item) {
 				const li = document.createElement("li");
 				li.dataset.id = item.id;
+				if (item.afgevinkt) li.classList.add("afgevinkt");
+				const vink = document.createElement("input");
+				vink.type = "checkbox";
+				vink.checked = item.afgevinkt;
+				vink.onchange = async () => {
+					await fetch(`/api/items/${item.id}`, {
+						method: "PATCH",
+						headers: { "content-type": "application/json" },
+						body: JSON.stringify({ afgevinkt: vink.checked }),
+					});
+					laad();
+				};
 				const naam = document.createElement("span");
 				naam.className = "naam";
 				naam.textContent = item.naam;
@@ -86,7 +106,7 @@
 						: "Verwijderen lukte niet, probeer het opnieuw";
 					laad();
 				};
-				li.append(naam, weg);
+				li.append(vink, naam, weg);
 				return li;
 			}
 

@@ -1,0 +1,8 @@
+schema: 1
+spec: "007-item-afvinken"
+slice: "A"
+branch: "factory/007-item-afvinken-a"
+fase: review
+tests:
+  commit: "9fd42b927335e252f377a59248753ca746e18a08"
+  aantal: 5

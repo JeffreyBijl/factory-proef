@@ -6,7 +6,13 @@ export function maakStore() {
 
 	function voegToe(huishouden, naam) {
 		const positie = items.filter((i) => i.huishouden === huishouden).length;
-		const item = { id: volgendId++, huishouden, naam, positie };
+		const item = {
+			id: volgendId++,
+			huishouden,
+			naam,
+			positie,
+			afgevinkt: false,
+		};
 		items.push(item);
 		return item;
 	}
@@ -14,7 +20,7 @@ export function maakStore() {
 	function lijst(huishouden) {
 		return items
 			.filter((i) => i.huishouden === huishouden)
-			.sort((a, b) => a.positie - b.positie);
+			.sort((a, b) => a.afgevinkt - b.afgevinkt || a.positie - b.positie);
 	}
 
 	function zoek(id) {
