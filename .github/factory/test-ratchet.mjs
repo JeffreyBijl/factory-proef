@@ -64,7 +64,15 @@ function tel(root, testmap) {
 
 // Aantal tests in de testmap zoals die in een commit staat.
 function telOp(root, testmap, ref) {
-	const bestanden = git(root, "ls-tree", "-r", "--name-only", ref, "--", testmap)
+	const bestanden = git(
+		root,
+		"ls-tree",
+		"-r",
+		"--name-only",
+		ref,
+		"--",
+		testmap,
+	)
 		.split("\n")
 		.filter((b) => b && !b.split("/").includes("node_modules"));
 	return bestanden.reduce(
@@ -185,10 +193,10 @@ function pipeline(root, testmap, basisbranch, branch) {
 			? `- Commit van de testagent: \`${commit.slice(0, 7)}\``
 			: "- Geen statusbestand: geen PR van de factory",
 		`- Gewijzigd in \`${testmap}\` sinds ${basisbranch}: ${gewijzigd ? "" : "niets"}`,
-		...(gewijzigd
-			? ["", "```text", gewijzigd, "```"]
+		...(gewijzigd ? ["", "```text", gewijzigd, "```"] : []),
+		...(fouten.length
+			? ["", "**Faalt:**", ...fouten.map((f) => `- ${f}`)]
 			: []),
-		...(fouten.length ? ["", "**Faalt:**", ...fouten.map((f) => `- ${f}`)] : []),
 		"",
 	].join("\n");
 	if (process.env.GITHUB_STEP_SUMMARY) {

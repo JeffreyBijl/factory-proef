@@ -13,7 +13,8 @@ import { projectmap, scalar } from "./lib.mjs";
 
 const sleutel = process.argv[2];
 const i = process.argv.indexOf("--map");
-const root = i === -1 ? projectmap(process.cwd()) : path.resolve(process.argv[i + 1]);
+const root =
+	i === -1 ? projectmap(process.cwd()) : path.resolve(process.argv[i + 1]);
 const bestand = path.join(root, ".factory", "profiel.yaml");
 
 if (!sleutel || !existsSync(bestand)) {
@@ -26,7 +27,11 @@ if (!sleutel || !existsSync(bestand)) {
 }
 
 const tekst = readFileSync(bestand, "utf8");
-if (!new RegExp(`^\\s+${sleutel}:`, "m").test(tekst.split(/^commandos:/m)[1] ?? "")) {
+if (
+	!new RegExp(`^\\s+${sleutel}:`, "m").test(
+		tekst.split(/^commandos:/m)[1] ?? "",
+	)
+) {
 	console.error(`Het profiel heeft geen commando '${sleutel}'.`);
 	process.exit(2);
 }
